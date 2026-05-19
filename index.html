@@ -724,9 +724,6 @@
 
 <script>
 // --- Core Calculation ---
-let prevC = 20;
-let prevW = 0.1;
-
 function calcPrice(C, W_kg, regFee, comm, target, shipRate) {
   const S = regFee + W_kg * shipRate;
   const productPrice = C / (1 - comm) / (1 - target);
@@ -756,13 +753,6 @@ function calculate() {
   const discText = discount >= 0.5 ? Math.round(discount * 10) + '折' : Math.round((1 - discount) * 100) + '%OFF';
   document.getElementById('discountVal').textContent = discText;
   document.getElementById('discountText').textContent = '打' + Math.round(discount * 10) + '折';
-
-  // Auto-increment product ID when cost or weight changes
-  if (C !== prevC || W !== prevW) {
-    newProductId();
-    prevC = C;
-    prevW = W;
-  }
 
   // Registration fee logic
   let regFee = W > thresholdKg ? highRF : baseRF;
@@ -832,14 +822,25 @@ function calculate() {
 }
 
 // --- Product ID ---
+let _zmhFallback = null;
+
 function getProductIdCounter() {
-  let c = parseInt(localStorage.getItem('zmh_counter'));
-  if (isNaN(c) || c < 955) c = 955;
-  return c;
+  try {
+    let c = parseInt(localStorage.getItem('zmh_counter'));
+    if (isNaN(c) || c < 955) c = 955;
+    return c;
+  } catch (e) {
+    if (_zmhFallback === null) _zmhFallback = 955;
+    return _zmhFallback;
+  }
 }
 
 function setProductIdCounter(val) {
-  localStorage.setItem('zmh_counter', val);
+  try {
+    localStorage.setItem('zmh_counter', val);
+  } catch (e) {
+    _zmhFallback = val;
+  }
 }
 
 function newProductId() {
@@ -853,27 +854,34 @@ function newProductId() {
 function copyProductId() {
   const id = document.getElementById('productIdDisplay').textContent;
   const fb = document.getElementById('idFeedback');
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(id).then(() => {
+  try {
+    navigator.clipboard.writeText(id).then(function () {
       fb.classList.add('show');
-      setTimeout(() => fb.classList.remove('show'), 1500);
+      setTimeout(function () { fb.classList.remove('show'); }, 1500);
+    }, function () {
+      fallbackCopy(id, fb);
     });
-  } else {
-    const ta = document.createElement('textarea');
-    ta.value = id;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    ta.remove();
-    fb.classList.add('show');
-    setTimeout(() => fb.classList.remove('show'), 1500);
+  } catch (e) {
+    fallbackCopy(id, fb);
   }
 }
 
-window.addEventListener('load', function () {
+function fallbackCopy(id, fb) {
+  const ta = document.createElement('textarea');
+  ta.value = id;
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  ta.remove();
+  fb.classList.add('show');
+  setTimeout(function () { fb.classList.remove('show'); }, 1500);
+}
+
+// Initialize product ID display
+(function () {
   const c = getProductIdCounter();
   document.getElementById('productIdDisplay').textContent = 'zmh-' + c;
-});
+})();
 
 // --- Toggles ---
 function toggleAdv() {
@@ -885,7 +893,11 @@ function toggleLogistics() {
 
 // --- Auto-run ---
 calculate();
-document.querySelectorAll('input').forEach(el => el.addEventListener('input', calculate));
+document.querySelectorAll('input').forEach(function (el) {
+  el.addEventListener('input', calculate);
+});
+document.getElementById('productCost').addEventListener('change', newProductId);
+document.getElementById('productWeight').addEventListener('change', newProductId);
 </script>
 </body>
 </html>
