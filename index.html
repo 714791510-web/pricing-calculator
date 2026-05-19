@@ -724,6 +724,9 @@
 
 <script>
 // --- Core Calculation ---
+let prevC = -1;
+let prevW = -1;
+
 function calcPrice(C, W_kg, regFee, comm, target, shipRate) {
   const S = regFee + W_kg * shipRate;
   const productPrice = C / (1 - comm) / (1 - target);
@@ -753,6 +756,13 @@ function calculate() {
   const discText = discount >= 0.5 ? Math.round(discount * 10) + '折' : Math.round((1 - discount) * 100) + '%OFF';
   document.getElementById('discountVal').textContent = discText;
   document.getElementById('discountText').textContent = '打' + Math.round(discount * 10) + '折';
+
+  // Auto-increment product ID when cost or weight changes
+  if (C !== prevC || W !== prevW) {
+    newProductId();
+    prevC = C;
+    prevW = W;
+  }
 
   // Registration fee logic
   let regFee = W > thresholdKg ? highRF : baseRF;
