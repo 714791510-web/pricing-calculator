@@ -324,6 +324,55 @@
   .shipping-line span { display: flex; align-items: center; gap: 4px; }
   .shipping-line strong { color: var(--text); font-weight: 600; }
 
+  /* Product ID bar */
+  .product-id-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 22px;
+    padding: 10px 20px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+  }
+  .product-id-bar .label {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .product-id-bar .id-value {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .product-id-bar .id-value:hover { opacity: 0.75; }
+  .product-id-bar .btn-icon {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 12px;
+    font-family: inherit;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+  .product-id-bar .btn-icon:hover {
+    background: rgba(255,255,255,0.06);
+    color: var(--text);
+  }
+  .product-id-bar .feedback {
+    font-size: 11px;
+    color: var(--success);
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .product-id-bar .feedback.show { opacity: 1; }
+
   /* Advanced toggle */
   .adv-toggle {
     text-align: center;
@@ -472,6 +521,12 @@
   <!-- Result -->
   <div class="result-area" id="resultArea">
     <div class="result-main">
+      <div class="product-id-bar">
+        <span class="label">📋 商品编号</span>
+        <span class="id-value" id="productIdDisplay" onclick="copyProductId()" title="点击复制">zmh-955</span>
+        <button class="btn-icon" onclick="newProductId()" title="生成下一个编号">⟳ 新编号</button>
+        <span class="feedback" id="idFeedback">✓ 已复制</span>
+      </div>
       <div class="price-comparison">
         <div class="price-original">
           <div class="label">原价</div>
@@ -765,6 +820,50 @@ function calculate() {
     ? (W > thresholdKg ? '> ' + thresholdKg + 'kg 高额费' : '售价 > ¥' + THRESHOLD_PRICE + ' 高额费')
     : '≤ ' + thresholdKg + 'kg 基础费';
 }
+
+// --- Product ID ---
+function getProductIdCounter() {
+  let c = parseInt(localStorage.getItem('zmh_counter'));
+  if (isNaN(c) || c < 955) c = 955;
+  return c;
+}
+
+function setProductIdCounter(val) {
+  localStorage.setItem('zmh_counter', val);
+}
+
+function newProductId() {
+  let c = getProductIdCounter();
+  c++;
+  setProductIdCounter(c);
+  document.getElementById('productIdDisplay').textContent = 'zmh-' + c;
+  document.getElementById('idFeedback').classList.remove('show');
+}
+
+function copyProductId() {
+  const id = document.getElementById('productIdDisplay').textContent;
+  const fb = document.getElementById('idFeedback');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(id).then(() => {
+      fb.classList.add('show');
+      setTimeout(() => fb.classList.remove('show'), 1500);
+    });
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = id;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    fb.classList.add('show');
+    setTimeout(() => fb.classList.remove('show'), 1500);
+  }
+}
+
+window.addEventListener('load', function () {
+  const c = getProductIdCounter();
+  document.getElementById('productIdDisplay').textContent = 'zmh-' + c;
+});
 
 // --- Toggles ---
 function toggleAdv() {
