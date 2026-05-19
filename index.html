@@ -823,6 +823,8 @@ function calculate() {
 
 // --- Product ID ---
 let _zmhFallback = null;
+let _pidLastCost = 20;
+let _pidLastWeight = 0.1;
 
 function getProductIdCounter() {
   try {
@@ -896,8 +898,21 @@ calculate();
 document.querySelectorAll('input').forEach(function (el) {
   el.addEventListener('input', calculate);
 });
-document.getElementById('productCost').addEventListener('change', newProductId);
-document.getElementById('productWeight').addEventListener('change', newProductId);
+// Auto-increment product ID when cost or weight changes
+document.getElementById('productCost').addEventListener('input', function () {
+  var v = parseFloat(this.value);
+  if (v !== _pidLastCost && !isNaN(v)) {
+    _pidLastCost = v;
+    newProductId();
+  }
+});
+document.getElementById('productWeight').addEventListener('input', function () {
+  var v = parseFloat(this.value);
+  if (v !== _pidLastWeight && !isNaN(v)) {
+    _pidLastWeight = v;
+    newProductId();
+  }
+});
 </script>
 </body>
 </html>
