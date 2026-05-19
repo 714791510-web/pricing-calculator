@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>速卖通智能计价</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #080c18;
+    --surface: rgba(255,255,255,0.04);
+    --surface-hover: rgba(255,255,255,0.08);
+    --border: rgba(255,255,255,0.08);
+    --border-light: rgba(255,255,255,0.12);
+    --text: #f1f5f9;
+    --text-dim: rgba(255,255,255,0.45);
+    --text-muted: rgba(255,255,255,0.6);
+    --accent: #38bdf8;
+    --accent-glow: rgba(56,189,248,0.25);
+    --success: #34d399;
+    --amber: #fbbf24;
+    --rose: #fb7185;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, 'Noto Sans SC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 20px;
+    background-image:
+      radial-gradient(ellipse 600px 400px at 50% -20%, rgba(56,189,248,0.06), transparent),
+      radial-gradient(ellipse 500px 300px at 80% 60%, rgba(139,92,246,0.04), transparent);
+  }
+
+  .container { max-width: 880px; width: 100%; }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 36px;
+    padding: 28px 24px 24px;
+  }
+  .header h1 {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #f1f5f9 0%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 6px;
+    letter-spacing: 0.3px;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .icon { font-size: 16px; }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 640px) {
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+
+  /* Form */
+  .form-group { margin-bottom: 18px; }
+  .form-group:last-child { margin-bottom: 0; }
+  .form-group label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .form-group label .val {
+    color: var(--text);
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: border-color 0.25s, box-shadow 0.25s;
+  }
+  .input-wrap:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .input-wrap input {
+    width: 100%;
+    padding: 12px 14px;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    font-family: inherit;
+  }
+  .input-wrap input::-webkit-outer-spin-button,
+  .input-wrap input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .input-wrap input[type=number] { -moz-appearance: textfield; }
+  .input-wrap .unit {
+    padding: 0 14px 0 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .input-wrap .prefix {
+    padding: 0 4px 0 14px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-dim);
+  }
+
+  /* Result */
+  .result-area {
+    margin-bottom: 28px;
+    display: none;
+  }
+  .result-area.visible { display: block; }
+
+  .result-main {
+    background: linear-gradient(135deg, rgba(56,189,248,0.12) 0%, rgba(139,92,246,0.08) 100%);
+    border: 1px solid rgba(56,189,248,0.2);
+    border-radius: var(--radius);
+    padding: 32px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    text-align: center;
+  }
+
+  .price-comparison {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .price-original {
+    text-align: center;
+  }
+  .price-original .label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .price-original .amount {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--text-dim);
+    text-decoration: line-through;
+    text-decoration-color: var(--rose);
+    text-decoration-thickness: 2px;
+  }
+
+  .price-divider {
+    width: 1px;
+    height: 60px;
+    background: var(--border-light);
+  }
+
+  .price-actual {
+    text-align: center;
+  }
+  .price-actual .label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .price-actual .amount {
+    font-size: 46px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #f1f5f9 0%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+  }
+  .price-actual .amount .cny-sign {
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  .discount-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    padding: 6px 18px;
+    background: rgba(251,191,36,0.12);
+    border: 1px solid rgba(251,191,36,0.25);
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--amber);
+  }
+  .discount-badge .save {
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+  .discount-badge .save strong {
+    color: var(--success);
+    font-weight: 600;
+  }
+
+  /* Result tags */
+  .result-tags {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+  }
+  .result-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 100px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .result-tag strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .result-tag .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  /* Sub info */
+  .result-sub {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .result-sub-item {
+    padding: 12px;
+    background: rgba(255,255,255,0.03);
+    border-radius: var(--radius-sm);
+    text-align: center;
+  }
+  .result-sub-item .lbl {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 3px;
+  }
+  .result-sub-item .val {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .result-sub-item .val.muted {
+    color: var(--text-dim);
+    font-weight: 500;
+    font-size: 14px;
+  }
+  .result-sub-item .val.green { color: var(--success); }
+
+  /* Shipping line */
+  .shipping-line {
+    margin-top: 14px;
+    padding: 10px 18px;
+    background: rgba(255,255,255,0.03);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .shipping-line span { display: flex; align-items: center; gap: 4px; }
+  .shipping-line strong { color: var(--text); font-weight: 600; }
+
+  /* Advanced toggle */
+  .adv-toggle {
+    text-align: center;
+    margin-top: 16px;
+  }
+  .adv-toggle button {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 7px 20px;
+    border-radius: 100px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .adv-toggle button:hover {
+    border-color: var(--border-light);
+    color: var(--text-muted);
+  }
+  .adv-panel {
+    display: none;
+    margin-top: 16px;
+  }
+  .adv-panel.open { display: block; }
+  .adv-inner {
+    padding: 20px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+  .adv-inner .grid-2 { gap: 16px; }
+
+  /* Formula */
+  .formula-bar {
+    margin-top: 20px;
+    padding: 14px 20px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 2;
+  }
+  .formula-bar strong { color: var(--text-muted); }
+  .formula-bar code {
+    display: inline-block;
+    background: rgba(56,189,248,0.1);
+    color: var(--accent);
+    padding: 0 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: 'Inter', monospace;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 11px;
+    margin-top: 40px;
+    padding: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Slider style range */
+  .range-group { margin-bottom: 18px; }
+  .range-group:last-child { margin-bottom: 0; }
+  .range-group .range-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .range-group .range-header label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-dim);
+    margin: 0;
+  }
+  .range-group .range-header .range-val {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 40px;
+    text-align: right;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    outline: none;
+    transition: background 0.2s;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 10px var(--accent-glow);
+    transition: transform 0.15s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: none;
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .result-area.visible { animation: fadeUp 0.4s ease; }
+
+  @media (max-width: 640px) {
+    body { padding: 16px 12px; }
+    .card { padding: 18px; }
+    .result-main { padding: 20px; }
+    .price-comparison { gap: 16px; }
+    .price-original .amount { font-size: 24px; }
+    .price-actual .amount { font-size: 34px; }
+    .result-sub { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>速卖通智能计价</h1>
+    <p>输入产品信息 · 自动计算售价 · 含佣金 · 物流 · 折扣策略</p>
+  </div>
+
+  <!-- Result -->
+  <div class="result-area" id="resultArea">
+    <div class="result-main">
+      <div class="price-comparison">
+        <div class="price-original">
+          <div class="label">原价</div>
+          <div class="amount" id="rdDisplayPrice">¥0</div>
+        </div>
+        <div class="price-divider"></div>
+        <div class="price-actual">
+          <div class="label">客户支付</div>
+          <div class="amount"><span class="cny-sign">¥</span><span id="rdActualPrice">0.00</span></div>
+        </div>
+      </div>
+
+      <div class="discount-badge" id="discountBadge">
+        <span id="discountText">打5折</span>
+        <span class="save">省 <strong id="rdSaved">¥0.00</strong></span>
+      </div>
+
+      <div class="shipping-line">
+        <span>📦 产品成本 <strong id="rdCostDisplay">¥0.00</strong></span>
+        <span>🚚 另付物流费 <strong id="rdShippingPaid">¥0.00</strong></span>
+      </div>
+
+      <div class="result-tags">
+        <span class="result-tag"><span class="dot"></span>净利润 <strong id="tagProfit">30</strong>%</span>
+        <span class="result-tag"><span class="dot"></span>佣金 <strong id="tagCommission">11</strong>%</span>
+        <span class="result-tag"><span class="dot"></span><span id="tagRegFee">挂号费 ¥9</span></span>
+      </div>
+
+      <div class="result-sub">
+        <div class="result-sub-item">
+          <div class="lbl">产品售价</div>
+          <div class="val muted" id="rdProductPrice">¥0.00</div>
+        </div>
+        <div class="result-sub-item">
+          <div class="lbl">物流利润</div>
+          <div class="val muted" id="rdShippingProfit">¥0.00</div>
+        </div>
+        <div class="result-sub-item">
+          <div class="lbl">平台佣金</div>
+          <div class="val muted" id="rdCommission">¥0.00</div>
+        </div>
+        <div class="result-sub-item">
+          <div class="lbl">净利润</div>
+          <div class="val green" id="rdProfit">¥0.00</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="adv-toggle">
+      <button onclick="toggleAdv()">⚙️ 高级详情</button>
+    </div>
+    <div class="adv-panel" id="advPanel">
+      <div class="adv-inner">
+        <div class="result-sub">
+          <div class="result-sub-item">
+            <div class="lbl">物流成本</div>
+            <div class="val muted" id="rdShippingCost">¥0.00</div>
+          </div>
+          <div class="result-sub-item">
+            <div class="lbl">物流收费（客户付）</div>
+            <div class="val muted" id="rdShippingCharge">¥0.00</div>
+          </div>
+          <div class="result-sub-item">
+            <div class="lbl">总成本</div>
+            <div class="val muted" id="rdTotalCost">¥0.00</div>
+          </div>
+          <div class="result-sub-item">
+            <div class="lbl">总收入</div>
+            <div class="val muted" id="rdTotalRevenue">¥0.00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="formula-bar">
+      <strong>公式：</strong>
+      产品售价 = 成本 ÷ 0.89 ÷ 0.70 &nbsp;·&nbsp;
+      物流利润 = (挂号费+运费) ÷ 0.8 − (挂号费+运费) &nbsp;·&nbsp;
+      实际售价 = 产品售价 + 物流利润 &nbsp;·&nbsp;
+      原价 = 实际售价 ÷ 折扣率
+    </div>
+  </div>
+
+  <!-- Inputs Grid -->
+  <div class="grid-2">
+    <!-- Left: Product -->
+    <div class="card">
+      <div class="card-title"><span class="icon">📦</span>产品信息</div>
+
+      <div class="form-group">
+        <label>产品成本 <span class="val" id="costVal">¥20.00</span></label>
+        <div class="input-wrap">
+          <span class="prefix">¥</span>
+          <input type="number" id="productCost" value="20" step="0.01" min="0">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>产品重量 <span class="val" id="weightVal">0.10 kg</span></label>
+        <div class="input-wrap">
+          <input type="number" id="productWeight" value="0.1" step="0.01" min="0">
+          <span class="unit">kg</span>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top: 20px;">
+        <label>挂号费 <span class="val" id="regFeeDisplay">¥9</span></label>
+        <div style="display: flex; gap: 8px; align-items: center; padding: 2px 0;">
+          <div style="flex:1; height: 4px; background: var(--border); border-radius: 2px; position: relative;">
+            <div id="regFeeBar" style="position:absolute; left:0; top:0; height:100%; border-radius:2px; background:var(--accent); width:50%; transition: width 0.3s;"></div>
+          </div>
+          <span style="font-size:11px; color:var(--text-dim);" id="regFeeNote">≤ 0.2kg 或售价 ≤ ¥35</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Pricing -->
+    <div class="card">
+      <div class="card-title"><span class="icon">⚡</span>定价策略</div>
+
+      <div class="range-group">
+        <div class="range-header">
+          <label>目标利润率</label>
+          <span class="range-val" id="targetVal">30%</span>
+        </div>
+        <input type="range" id="targetProfit" min="5" max="50" value="30" step="0.5">
+      </div>
+
+      <div class="range-group">
+        <div class="range-header">
+          <label>平台佣金率</label>
+          <span class="range-val" id="commissionVal">11%</span>
+        </div>
+        <input type="range" id="commissionRate" min="1" max="30" value="11" step="0.5">
+      </div>
+
+      <div class="range-group">
+        <div class="range-header">
+          <label>折扣力度</label>
+          <span class="range-val" id="discountVal">5折</span>
+        </div>
+        <input type="range" id="discountRate" min="10" max="90" value="50" step="5">
+      </div>
+
+      <!-- Advanced logistics settings (hidden by default) -->
+      <div class="adv-toggle" style="margin-top: 12px;">
+        <button onclick="toggleLogistics()">🚚 物流参数</button>
+      </div>
+      <div class="adv-panel" id="logisticsPanel">
+        <div class="adv-inner" style="margin-top: 12px;">
+          <div class="grid-2">
+            <div class="form-group">
+              <label>运费单价</label>
+              <div class="input-wrap">
+                <input type="number" id="shippingRatePerKg" value="80" step="1" min="0">
+                <span class="unit">¥/kg</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>挂号费（基础）</label>
+              <div class="input-wrap">
+                <span class="prefix">¥</span>
+                <input type="number" id="baseRegFee" value="9" step="0.5" min="0">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>挂号费（高额）</label>
+              <div class="input-wrap">
+                <span class="prefix">¥</span>
+                <input type="number" id="highRegFee" value="18" step="0.5" min="0">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>高额触发重量</label>
+              <div class="input-wrap">
+                <input type="number" id="regFeeThresholdWeight" value="0.2" step="0.05" min="0">
+                <span class="unit">kg</span>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:10px; font-size:11px; color:var(--text-dim); line-height:1.7;">
+            <strong>挂号费规则：</strong>重量 &gt; 0.2kg → 强制高额费；
+            重量 ≤ 0.2kg → 先用基础费，实际售价 &gt; ¥35 则切换到高额费<br>
+            <strong>物流利润：</strong>(挂号费 + 运费) ÷ 0.8 − (挂号费 + 运费) ＝ 物流成本 × 25%
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    速卖通智能计价工具 · 仅供参考，以实际运营为准
+  </div>
+</div>
+
+<script>
+// --- Core Calculation ---
+function calcPrice(C, W_kg, regFee, comm, target, shipRate) {
+  const S = regFee + W_kg * shipRate;
+  const productPrice = C / (1 - comm) / (1 - target);
+  const logisticsProfit = S / 0.8 - S;
+  return productPrice + logisticsProfit;
+}
+
+// --- Main ---
+function calculate() {
+  const C = parseFloat(document.getElementById('productCost').value) || 0;
+  const W = parseFloat(document.getElementById('productWeight').value) || 0; // kg
+  const target = parseFloat(document.getElementById('targetProfit').value) / 100;
+  const comm = parseFloat(document.getElementById('commissionRate').value) / 100;
+  const discountSlider = parseInt(document.getElementById('discountRate').value);
+  const discount = discountSlider / 100;
+  const shipRate = parseFloat(document.getElementById('shippingRatePerKg').value) || 80;
+  const baseRF = parseFloat(document.getElementById('baseRegFee').value) || 9;
+  const highRF = parseFloat(document.getElementById('highRegFee').value) || 18;
+  const thresholdKg = parseFloat(document.getElementById('regFeeThresholdWeight').value) || 0.2;
+  const THRESHOLD_PRICE = 35;
+
+  // Update live labels
+  document.getElementById('costVal').textContent = '¥' + C.toFixed(2);
+  document.getElementById('weightVal').textContent = W.toFixed(2) + ' kg';
+  document.getElementById('targetVal').textContent = (target * 100).toFixed(0) + '%';
+  document.getElementById('commissionVal').textContent = (comm * 100).toFixed(0) + '%';
+  const discText = discount >= 0.5 ? Math.round(discount * 10) + '折' : Math.round((1 - discount) * 100) + '%OFF';
+  document.getElementById('discountVal').textContent = discText;
+  document.getElementById('discountText').textContent = '打' + Math.round(discount * 10) + '折';
+
+  // Registration fee logic
+  let regFee = W > thresholdKg ? highRF : baseRF;
+  let actualPrice;
+
+  for (let i = 0; i < 5; i++) {
+    const prev = regFee;
+    actualPrice = calcPrice(C, W, regFee, comm, target, shipRate);
+    if (W <= thresholdKg) {
+      regFee = actualPrice > THRESHOLD_PRICE ? highRF : baseRF;
+    }
+    if (regFee === prev) break;
+  }
+
+  if (actualPrice <= 0 || !isFinite(actualPrice)) {
+    document.getElementById('resultArea').classList.remove('visible');
+    return;
+  }
+
+  // --- Results ---
+  const S = regFee + W * shipRate;
+  const productPrice = C / (1 - comm) / (1 - target);
+  const commission = actualPrice * comm;
+  const shippingCharge = S / 0.8;
+  const logisticsProfit = shippingCharge - S;
+  const displayPrice = actualPrice / discount;
+  const totalRevenue = actualPrice + shippingCharge;
+  const totalCost = C + commission + S;
+  const netProfit = totalRevenue - totalCost;
+
+  // Show
+  document.getElementById('resultArea').classList.add('visible');
+
+  // Main prices
+  document.getElementById('rdDisplayPrice').textContent = '¥' + Math.round(displayPrice);
+  document.getElementById('rdActualPrice').textContent = actualPrice.toFixed(2);
+  document.getElementById('rdSaved').textContent = '¥' + (displayPrice - actualPrice).toFixed(2);
+
+  // Tags
+  document.getElementById('tagProfit').textContent = Math.round(target * 100);
+  document.getElementById('tagCommission').textContent = Math.round(comm * 100);
+  document.getElementById('tagRegFee').textContent = '挂号费 ¥' + regFee;
+
+  // Cost & shipping
+  document.getElementById('rdCostDisplay').textContent = '¥' + C.toFixed(2);
+  document.getElementById('rdShippingPaid').textContent = shippingCharge.toFixed(2);
+
+  // Sub items
+  document.getElementById('rdProductPrice').textContent = '¥' + productPrice.toFixed(2);
+  document.getElementById('rdShippingProfit').textContent = '¥' + logisticsProfit.toFixed(2);
+  document.getElementById('rdCommission').textContent = '¥' + commission.toFixed(2);
+  document.getElementById('rdProfit').textContent = '¥' + netProfit.toFixed(2);
+
+  // Advanced
+  document.getElementById('rdShippingCost').textContent = '¥' + S.toFixed(2);
+  document.getElementById('rdShippingCharge').textContent = '¥' + shippingCharge.toFixed(2);
+  document.getElementById('rdTotalCost').textContent = '¥' + totalCost.toFixed(2);
+  document.getElementById('rdTotalRevenue').textContent = '¥' + totalRevenue.toFixed(2);
+
+  // Reg fee display
+  document.getElementById('regFeeDisplay').textContent = '¥' + regFee;
+  const barPct = regFee === highRF ? 100 : (regFee / highRF * 100);
+  document.getElementById('regFeeBar').style.width = barPct + '%';
+  document.getElementById('regFeeNote').textContent = regFee === highRF
+    ? (W > thresholdKg ? '> ' + thresholdKg + 'kg 高额费' : '售价 > ¥' + THRESHOLD_PRICE + ' 高额费')
+    : '≤ ' + thresholdKg + 'kg 基础费';
+}
+
+// --- Toggles ---
+function toggleAdv() {
+  document.getElementById('advPanel').classList.toggle('open');
+}
+function toggleLogistics() {
+  document.getElementById('logisticsPanel').classList.toggle('open');
+}
+
+// --- Auto-run ---
+calculate();
+document.querySelectorAll('input').forEach(el => el.addEventListener('input', calculate));
+</script>
+</body>
+</html>
